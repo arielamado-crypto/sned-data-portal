@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SNEd Data Editor · Schools Division of Iloilo</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+    body{background:var(--tint)}
+    .ed-header{background:#1f0d4a;color:#fff;position:sticky;top:0;z-index:40}
+    .ed-header .wrap{display:flex;align-items:center;gap:14px;min-height:68px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+    .ed-header img{width:44px;height:44px}
+    .ed-title{display:flex;flex-direction:column;line-height:1.2;margin-right:auto}
+    .ed-title strong{font-family:var(--serif);font-size:1.15rem;font-weight:600}
+    .ed-title small{color:#c9bff0;font-size:.78rem}
+    .ed-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .ed-actions .btn{padding:9px 16px;font-size:.88rem}
+    .btn-light{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25)}
+    .btn-light:hover{background:rgba(255,255,255,.2)}
+    .layout{display:grid;grid-template-columns:230px 1fr;gap:24px;padding:28px 20px 80px}
+    .tabs{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:2px}
+    .tabs button{text-align:left;background:none;border:0;font:inherit;font-size:.92rem;padding:10px 14px;border-radius:10px;color:var(--ink-2);cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .tabs button:hover{background:var(--purple-100)}
+    .tabs button.on{background:var(--ink);color:var(--bg)}
+    .tabs .cnt{font-size:.72rem;opacity:.7}
+    .panel{display:none}
+    .panel.on{display:block}
+    .panel > .card{margin-bottom:18px}
+    .panel h2{font-size:1.45rem;font-weight:500;margin-bottom:4px}
+    .panel .help{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px}
+    .form-grid label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:500;color:var(--ink-2)}
+    .form-grid label.full{grid-column:1/-1}
+    input[type=text],input[type=number],input[type=date],input[type=email],input[type=url],select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);width:100%}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple-500);box-shadow:0 0 0 3px color-mix(in srgb,var(--purple-500) 20%,transparent)}
+    textarea{resize:vertical;min-height:62px}
+    .form-grid label.switch{flex-direction:row;align-items:center;gap:10px;font-weight:500;color:var(--ink)}
+    .switch input{width:20px;height:20px;flex:none;accent-color:var(--purple-600)}
+    .ed-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+    table.ed{border-collapse:collapse;width:100%;min-width:640px;font-size:.9rem}
+    table.ed th{background:var(--tint);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+    table.ed td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+    table.ed td input,table.ed td select,table.ed td textarea{padding:7px 9px;border-radius:7px}
+    table.ed td.num input{text-align:right;font-variant-numeric:tabular-nums}
+    table.ed td.calc{text-align:right;font-weight:600;padding-top:12px;font-variant-numeric:tabular-nums;color:var(--purple-700)}
+    table.ed tfoot td{font-weight:700;text-align:right;padding:10px 8px;background:var(--tint)}
+    table.ed tfoot td:first-child{text-align:left}
+    .row-tools{white-space:nowrap;text-align:right}
+    .row-tools button{background:none;border:1px solid var(--line);border-radius:7px;width:30px;height:32px;cursor:pointer;color:var(--ink-2);font-size:.85rem}
+    .row-tools button:hover{border-color:var(--purple-500);color:var(--purple-600)}
+    .row-tools button.del:hover{border-color:#c0392b;color:#c0392b}
+    .tbl-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+    .tbl-actions .hint{color:var(--muted);font-size:.8rem;margin-left:auto}
+    .checks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+    .checks li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:.9rem}
+    .checks li.ok{background:#e8f6ee;color:#1d6b3f}
+    .checks li.warn{background:#fff3d6;color:#7a5200}
+    :root[data-theme="dark"] .checks li.ok{background:#173a28;color:#9fe3bb}
+    :root[data-theme="dark"] .checks li.warn{background:#3a2c08;color:#fde9ad}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--purple-900);color:#fff;padding:12px 20px;border-radius:12px;box-shadow:var(--shadow);opacity:0;transition:.25s;z-index:99;font-size:.9rem;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .steps{margin:0;padding-left:20px;display:grid;gap:8px;font-size:.92rem;color:var(--ink-2)}
+    .draft-flag{font-size:.75rem;background:var(--gold);color:#2a1600;padding:2px 8px;border-radius:999px;margin-left:8px;font-weight:600}
+    @media (max-width:860px){
+      .layout{grid-template-columns:1fr;padding-top:16px}
+      .tabs{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}
+      .tabs button{white-space:nowrap;border:1px solid var(--line);background:var(--surface)}
+      .form-grid{grid-template-columns:1fr}
+      .tbl-actions .hint{margin-left:0;width:100%}
+    }
+  </style>
+</head>
+<body>
+  <header class="ed-header">
+    <div class="wrap">
+      <img src="assets/img/division-seal.png" alt="" width="44" height="44">
+      <div class="ed-title">
+        <strong>SNEd Data Editor <span class="draft-flag" id="draftFlag" hidden>Unsaved draft</span></strong>
+        <small>Fill in the forms → Preview → Download data.js → Upload to GitHub</small>
+      </div>
+      <div class="ed-actions">
+        <button class="btn btn-light" type="button" id="btnPreview">Preview site</button>
+        <label class="btn btn-light" style="margin:0">Open data.js<input type="file" id="fileOpen" accept=".js,text/javascript" hidden></label>
+        <button class="btn btn-light" type="button" id="btnReset">Discard draft</button>
+        <button class="btn btn-gold" type="button" id="btnDownload">Download data.js</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <nav class="tabs" id="tabs" aria-label="Data sections"></nav>
+    <main id="panels"></main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script>
+  (function () {
+    "use strict";
+    var $ = function (s, r) { return (r || document).querySelector(s); };
+    var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+    var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+    var fmt = function (n) { return Number(n || 0).toLocaleString("en-PH"); };
+    var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+    var DRAFT_KEY = "sned:draft";
+
+    var published = clone(window.SNED_DATA || {});
+    var D;
+    try { var dr = localStorage.getItem(DRAFT_KEY); D = dr ? JSON.parse(dr) : clone(published); } catch (e) { D = clone(published); }
+    normalize(D);
+
+    function normalize(d) {
+      d.meta = d.meta || {}; d.summary = d.summary || {};
+      ["byDisability", "byLevel", "trend", "byDistrict", "schools", "programs", "announcements", "resources"].forEach(function (k) { if (!Array.isArray(d[k])) d[k] = []; });
+      d.schools.forEach(function (s) { if (!Array.isArray(s.programs)) s.programs = String(s.programs || "").split(";").map(function (x) { return x.trim(); }).filter(Boolean); });
+      if (typeof d.isSampleData !== "boolean") d.isSampleData = false;
+    }
+
+    function toast(msg) { var t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove("show"); }, 2600); }
+
+    var saveT;
+    function changed() {
+      clearTimeout(saveT);
+      saveT = setTimeout(function () { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(D)); } catch (e) {} }, 300);
+      $("#draftFlag").hidden = false;
+      updateCounts(); runChecks(); refreshDistrictList();
+    }
+
+    /* ---------------- section definitions ---------------- */
+    var ICONS = ["users", "star", "ear", "search", "file", "book", "home", "school", "teacher"];
+    var TYPES = ["SNEd Center", "Inclusive School", "Learning Resource Center"];
+    var TABLES = {
+      byDisability: { title: "Learners with Disabilities by Category", help: "Male and female count for each disability category. Total is computed automatically.",
+        cols: [{ k: "category", l: "Category", w: "46%" }, { k: "male", l: "Male", t: "num" }, { k: "female", l: "Female", t: "num" }],
+        calc: { l: "Total", f: function (r) { return (+r.male || 0) + (+r.female || 0); } }, totals: ["male", "female"], blank: { category: "", male: 0, female: 0 } },
+      byLevel: { title: "Learners with Disabilities by Key Stage", help: "Used in the doughnut chart.",
+        cols: [{ k: "level", l: "Key stage", w: "60%" }, { k: "count", l: "Learners", t: "num" }], totals: ["count"], blank: { level: "", count: 0 } },
+      trend: { title: "Enrollment Trend", help: "One row per school year, oldest first. Used in the line chart.",
+        cols: [{ k: "sy", l: "School year", w: "40%" }, { k: "lwd", l: "Learners w/ Disabilities", t: "num" }, { k: "gifted", l: "Gifted & Talented", t: "num" }], blank: { sy: "", lwd: 0, gifted: 0 } },
+      byDistrict: { title: "By Congressional District", help: "Used in the district chart and summary table.",
+        cols: [{ k: "district", l: "District", w: "28%" }, { k: "lwd", l: "Learners w/ Disabilities", t: "num" }, { k: "gifted", l: "Gifted & Talented", t: "num" }, { k: "centers", l: "SNEd Centers", t: "num" }, { k: "schools", l: "Inclusive Schools", t: "num" }],
+        totals: ["lwd", "gifted", "centers", "schools"], blank: { district: "", lwd: 0, gifted: 0, centers: 0, schools: 0 } },
+      schools: { title: "SNEd Centers & Implementing Schools", help: "Directory of schools. Separate programs with a semicolon ( ; ).",
+        cols: [{ k: "name", l: "School name", w: "22%" }, { k: "municipality", l: "Municipality" }, { k: "district", l: "District", t: "district" }, { k: "type", l: "Type", t: "select", opts: TYPES }, { k: "programs", l: "Programs (separate with ;)", t: "list", w: "20%" }, { k: "lwd", l: "Learners", t: "num" }, { k: "teachers", l: "SNEd teachers", t: "num" }],
+        blank: { name: "", municipality: "", district: "1st District", type: "SNEd Center", programs: [], lwd: 0, teachers: 0 } },
+      programs: { title: "Programs & Services", help: "Cards shown in the purple Programs section.",
+        cols: [{ k: "icon", l: "Icon", t: "select", opts: ICONS }, { k: "title", l: "Title", w: "24%" }, { k: "text", l: "Description", t: "area", w: "50%" }], blank: { icon: "star", title: "", text: "" } },
+      announcements: { title: "Announcements", help: "Newest items appear first automatically.",
+        cols: [{ k: "date", l: "Date", t: "date" }, { k: "title", l: "Title", w: "30%" }, { k: "text", l: "Details", t: "area", w: "45%" }], blank: { date: new Date().toISOString().slice(0, 10), title: "", text: "" } },
+      resources: { title: "Policies & Resources", help: "For your own files: upload them to the files folder on GitHub, then type files/filename.pdf as the link.",
+        cols: [{ k: "title", l: "Title", w: "50%" }, { k: "type", l: "Type (Policy, Form…)" }, { k: "url", l: "Link / file path", w: "26%" }], blank: { title: "", type: "Form", url: "files/" } }
+    };
+    var SECTIONS = [
+      { id: "general", label: "General info" },
+      { id: "summary", label: "Headline numbers" },
+      { id: "byDisability", label: "By disability" },
+      { id: "byLevel", label: "By key stage" },
+      { id: "trend", label: "Enrollment trend" },
+      { id: "byDistrict", label: "By district" },
+      { id: "schools", label: "SNEd Centers" },
+      { id: "programs", label: "Programs" },
+      { id: "announcements", label: "Announcements" },
+      { id: "resources", label: "Resources" },
+      { id: "check", label: "Check & publish" }
+    ];
+
+    /* ---------------- build tabs & panels ---------------- */
+    $("#tabs").innerHTML = SECTIONS.map(function (s, i) { return '<button type="button" data-tab="' + s.id + '"' + (i === 0 ? ' class="on"' : "") + ">" + s.label + '<span class="cnt" data-count="' + s.id + '"></span></button>'; }).join("");
+    $("#panels").innerHTML = SECTIONS.map(function (s, i) { return '<section class="panel' + (i === 0 ? " on" : "") + '" id="p-' + s.id + '"></section>'; }).join("");
+    $$("#tabs button").forEach(function (b) { b.addEventListener("click", function () { showTab(b.getAttribute("data-tab")); }); });
+    function showTab(id) {
+      $$("#tabs button").forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-tab") === id); });
+      $$(".panel").forEach(function (p) { p.classList.toggle("on", p.id === "p-" + id); });
+      if (id === "check") runChecks();
+      window.scrollTo({ top: 0 });
+    }
+    function updateCounts() { Object.keys(TABLES).forEach(function (k) { var el = $('[data-count="' + k + '"]'); if (el) el.textContent = D[k].length; }); }
+
+    /* ---------------- general + summary ---------------- */
+    var META = [["office", "Office name"], ["division", "Division"], ["address", "Address"], ["schoolYear", "School year (e.g. 2025–2026)"], ["asOf", "Data as of (e.g. October 2026)"], ["source", "Data source"], ["email", "Email", "email"], ["phone", "Phone"], ["facebook", "Facebook page link", "url"], ["focalPerson", "Focal person"], ["developer", "Developer credit"]];
+    var SUMMARY = [["learnersWithDisabilities", "Learners with Disabilities"], ["giftedTalented", "Gifted & Talented Learners"], ["snedCenters", "SNEd Centers"], ["inclusiveSchools", "Inclusive Schools"], ["snedTeachers", "SNEd Teachers"], ["learningResourceCenters", "Learning Resource Centers"]];
+
+    function renderGeneral() {
+      $("#p-general").innerHTML = '<div class="card"><h2>General information</h2><p class="help">Shown in the header, hero section and footer.</p><div class="form-grid">' +
+        META.map(function (m) { return '<label' + (m[0] === "source" || m[0] === "office" ? ' class="full"' : "") + ">" + m[1] + '<input type="' + (m[2] || "text") + '" data-meta="' + m[0] + '" value="' + esc(D.meta[m[0]]) + '"></label>'; }).join("") +
+        '<label class="full switch"><input type="checkbox" id="isSample"' + (D.isSampleData ? " checked" : "") + '> Show the yellow “Sample data” notice (uncheck once the figures are official)</label></div></div>';
+      $$("[data-meta]").forEach(function (i) { i.addEventListener("input", function () { D.meta[i.getAttribute("data-meta")] = i.value; changed(); }); });
+      $("#isSample").addEventListener("change", function () { D.isSampleData = this.checked; changed(); });
+    }
+    function renderSummary() {
+      $("#p-summary").innerHTML = '<div class="card"><h2>Headline numbers</h2><p class="help">The six big numbers at the top of the site. Use the button to fill them from your tables.</p><div class="form-grid">' +
+        SUMMARY.map(function (m) { return "<label>" + m[1] + '<input type="number" min="0" data-sum="' + m[0] + '" value="' + esc(D.summary[m[0]] || 0) + '"></label>'; }).join("") +
+        '</div><div class="tbl-actions"><button class="btn btn-outline btn-sm" type="button" id="autoSum">Fill from tables</button><span class="hint">Learners = disability table total · Gifted = district total · Centers & schools = district totals · Teachers = directory total</span></div></div>';
+      $$("[data-sum]").forEach(function (i) { i.addEventListener("input", function () { D.summary[i.getAttribute("data-sum")] = +i.value || 0; changed(); }); });
+      $("#autoSum").addEventListener("click", function () {
+        var s = D.summary;
+        s.learnersWithDisabilities = sumCol(D.byDisability, function (r) { return (+r.male || 0) + (+r.female || 0); });
+        s.giftedTalented = sumCol(D.byDistrict, function (r) { return r.gifted; });
+        s.snedCenters = sumCol(D.byDistrict, function (r) { return r.centers; });
+        s.inclusiveSchools = sumCol(D.byDistrict, function (r) { return r.schools; });
+        if (D.schools.length) s.snedTeachers = sumCol(D.schools, function (r) { return r.teachers; });
+        renderSummary(); changed(); toast("Headline numbers filled from tables");
+      });
+    }
+    function sumCol(arr, f) { return arr.reduce(function (a, r) { return a + (Number(f(r)) || 0); }, 0); }
+
+    /* ---------------- generic table editor ---------------- */
+    function cellHTML(col, row, ri) {
+      var v = row[col.k], a = ' data-r="' + ri + '" data-k="' + col.k + '"';
+      if (col.t === "num") return '<td class="num"><input type="number" min="0"' + a + ' value="' + esc(v == null ? 0 : v) + '"></td>';
+      if (col.t === "date") return '<td><input type="date"' + a + ' value="' + esc(v) + '"></td>';
+      if (col.t === "area") return "<td><textarea" + a + ">" + esc(v) + "</textarea></td>";
+      if (col.t === "list") return '<td><input type="text"' + a + ' value="' + esc((v || []).join("; ")) + '"></td>';
+      if (col.t === "select") {
+        var opts = col.opts.slice(); if (v && opts.indexOf(v) < 0) opts.push(v);
+        return "<td><select" + a + ">" + opts.map(function (o) { return "<option" + (o === v ? " selected" : "") + ">" + esc(o) + "</option>"; }).join("") + "</select></td>";
+      }
+      if (col.t === "district") return '<td><input type="text" list="districtList"' + a + ' value="' + esc(v) + '"></td>';
+      return '<td><input type="text"' + a + ' value="' + esc(v) + '"></td>';
+    }
+    function renderTable(key) {
+      var T = TABLES[key], rows = D[key];
+      var h = '<div class="card"><h2>' + T.title + '</h2><p class="help">' + T.help + '</p><div class="ed-table-wrap"><table class="ed" data-table="' + key + '"><thead><tr>' +
+        T.cols.map(function (c) { return "<th" + (c.w ? ' style="width:' + c.w + '"' : "") + ">" + c.l + "</th>"; }).join("") + (T.calc ? '<th style="text-align:right">' + T.calc.l + "</th>" : "") + "<th></th></tr></thead><tbody>" +
+        rows.map(function (r, ri) {
+          return "<tr>" + T.cols.map(function (c) { return cellHTML(c, r, ri); }).join("") + (T.calc ? '<td class="calc" data-calc="' + ri + '">' + fmt(T.calc.f(r)) + "</td>" : "") +
+            '<td class="row-tools"><button type="button" data-act="up" data-r="' + ri + '" title="Move up" aria-label="Move up">↑</button> <button type="button" data-act="down" data-r="' + ri + '" title="Move down" aria-label="Move down">↓</button> <button type="button" class="del" data-act="del" data-r="' + ri + '" title="Delete row" aria-label="Delete row">✕</button></td></tr>';
+        }).join("") + "</tbody>";
+      if (T.totals) h += '<tfoot><tr>' + T.cols.map(function (c, i) { return i === 0 ? "<td>Total</td>" : '<td data-tot="' + c.k + '">' + (T.totals.indexOf(c.k) > -1 ? fmt(sumCol(rows, function (r) { return r[c.k]; })) : "") + "</td>"; }).join("") + (T.calc ? '<td data-tot="__calc">' + fmt(sumCol(rows, T.calc.f)) + "</td>" : "") + "<td></td></tr></tfoot>";
+      h += '</table></div><div class="tbl-actions"><button class="btn btn-outline btn-sm" type="button" data-add="' + key + '">+ Add row</button><span class="hint">Tip: copy cells from Excel and paste into any box — rows are added automatically.</span></div></div>';
+      var p = $("#p-" + key); p.innerHTML = h;
+
+      var tbl = $("table", p);
+      tbl.addEventListener("input", function (e) {
+        var el = e.target, ri = el.getAttribute("data-r"), k = el.getAttribute("data-k"); if (ri == null || !k) return;
+        setVal(key, +ri, k, el.value);
+        if (T.calc) { var c = $('[data-calc="' + ri + '"]', tbl); if (c) c.textContent = fmt(T.calc.f(D[key][ri])); }
+        refreshTotals(key, tbl); changed();
+      });
+      tbl.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-act]"); if (!b) return;
+        var ri = +b.getAttribute("data-r"), act = b.getAttribute("data-act"), arr = D[key];
+        if (act === "del") { if (!confirm("Delete this row?")) return; arr.splice(ri, 1); }
+        if (act === "up" && ri > 0) arr.splice(ri - 1, 0, arr.splice(ri, 1)[0]);
+        if (act === "down" && ri < arr.length - 1) arr.splice(ri + 1, 0, arr.splice(ri, 1)[0]);
+        renderTable(key); changed();
+      });
+      tbl.addEventListener("paste", function (e) {
+        var el = e.target, ri = el.getAttribute("data-r"), k = el.getAttribute("data-k"); if (ri == null) return;
+        var text = (e.clipboardData || window.clipboardData).getData("text");
+        if (!/[\t\n]/.test(text.replace(/\n$/, ""))) return;
+        e.preventDefault();
+        var lines = text.replace(/\r/g, "").replace(/\n$/, "").split("\n").map(function (l) { return l.split("\t"); });
+        var startC = T.cols.map(function (c) { return c.k; }).indexOf(k), startR = +ri;
+        lines.forEach(function (cells, li) {
+          var r = startR + li; if (!D[key][r]) D[key].push(clone(T.blank));
+          cells.forEach(function (val, ci) { var col = T.cols[startC + ci]; if (col) setVal(key, r, col.k, val.trim()); });
+        });
+        renderTable(key); changed(); toast("Pasted " + lines.length + " row(s) from clipboard");
+      });
+      $("[data-add]", p).addEventListener("click", function () { D[key].push(clone(T.blank)); renderTable(key); changed(); var ins = $$("tbody tr:last-child input, tbody tr:last-child textarea", p); if (ins[0]) ins[0].focus(); });
+    }
+    function setVal(key, ri, k, val) {
+      var col = TABLES[key].cols.filter(function (c) { return c.k === k; })[0];
+      if (col.t === "num") val = Number(String(val).replace(/[, ]/g, "")) || 0;
+      if (col.t === "list") val = String(val).split(";").map(function (x) { return x.trim(); }).filter(Boolean);
+      D[key][ri][k] = val;
+    }
+    function refreshTotals(key, tbl) {
+      var T = TABLES[key]; if (!T.totals) return;
+      T.totals.forEach(function (k) { var c = $('[data-tot="' + k + '"]', tbl); if (c) c.textContent = fmt(sumCol(D[key], function (r) { return r[k]; })); });
+      if (T.calc) { var c = $('[data-tot="__calc"]', tbl); if (c) c.textContent = fmt(sumCol(D[key], T.calc.f)); }
+    }
+    function refreshDistrictList() {
+      var dl = $("#districtList"); if (!dl) { dl = document.createElement("datalist"); dl.id = "districtList"; document.body.appendChild(dl); }
+      dl.innerHTML = D.byDistrict.map(function (d) { return "<option value=\"" + esc(d.district) + "\">"; }).join("");
+    }
+
+    /* ---------------- checks ---------------- */
+    function runChecks() {
+      var p = $("#p-check"); if (!p) return;
+      var dis = sumCol(D.byDisability, function (r) { return (+r.male || 0) + (+r.female || 0); });
+      var lvl = sumCol(D.byLevel, function (r) { return r.count; });
+      var dst = sumCol(D.byDistrict, function (r) { return r.lwd; });
+      var gift = sumCol(D.byDistrict, function (r) { return r.gifted; });
+      var last = D.trend[D.trend.length - 1] || {};
+      var S = D.summary, items = [];
+      function chk(ok, good, bad) { items.push({ ok: ok, t: ok ? good : bad }); }
+      chk(dis === +S.learnersWithDisabilities, "Disability table total (" + fmt(dis) + ") matches the headline number.", "Disability table total is " + fmt(dis) + " but the headline says " + fmt(S.learnersWithDisabilities) + ".");
+      chk(lvl === dis, "Key-stage total matches the disability total (" + fmt(dis) + ").", "Key-stage total is " + fmt(lvl) + " but the disability total is " + fmt(dis) + ".");
+      chk(dst === dis, "District total matches the disability total (" + fmt(dis) + ").", "District total is " + fmt(dst) + " but the disability total is " + fmt(dis) + ".");
+      chk(gift === +S.giftedTalented, "Gifted & Talented district total matches the headline (" + fmt(gift) + ").", "Gifted & Talented district total is " + fmt(gift) + " but the headline says " + fmt(S.giftedTalented) + ".");
+      if (D.trend.length) chk(+last.lwd === dis, "Latest trend year (" + esc(last.sy) + ") matches the disability total.", "Latest trend year (" + esc(last.sy) + ") shows " + fmt(last.lwd) + " learners; the disability total is " + fmt(dis) + ".");
+      var blankNames = D.schools.filter(function (s) { return !String(s.name).trim(); }).length;
+      chk(!blankNames, "Every school in the directory has a name.", blankNames + " school row(s) have no name.");
+      var sample = D.schools.filter(function (s) { return /sample/i.test(s.name); }).length;
+      chk(!sample, "No sample school names left in the directory.", sample + " school(s) still have “Sample” in the name.");
+      chk(!D.isSampleData, "The “Sample data” notice is turned off.", "The yellow “Sample data” notice is still on (General info tab).");
+      var warn = items.filter(function (i) { return !i.ok; }).length;
+      p.innerHTML = '<div class="card"><h2>Check &amp; publish</h2><p class="help">' + (warn ? warn + " item(s) need attention. Warnings don't block downloading." : "All checks passed. Ready to publish.") + '</p><ul class="checks">' +
+        items.map(function (i) { return '<li class="' + (i.ok ? "ok" : "warn") + '"><span>' + (i.ok ? "✓" : "!") + "</span><span>" + i.t + "</span></li>"; }).join("") + "</ul></div>" +
+        '<div class="card"><h2>How to publish</h2><ol class="steps"><li>Click <b>Preview site</b> to see your changes.</li><li>Click <b>Download data.js</b> (top right).</li><li>On GitHub, open your repository → <b>assets</b> → <b>js</b> → <b>Add file</b> → <b>Upload files</b>.</li><li>Drag in the downloaded <b>data.js</b> → <b>Commit changes</b>. It replaces the old file.</li><li>Wait about a minute, then refresh the site. If the old data still shows, press Ctrl+F5.</li></ol></div>';
+    }
+
+    /* ---------------- top actions ---------------- */
+    function buildJS() {
+      var out = clone(D);
+      return "/* =====================================================================\n   SNEd DATA FILE — " + (out.meta.division || "Schools Division of Iloilo") + "\n   Generated by the SNEd Data Editor (admin.html) on " + new Date().toLocaleString("en-PH") + ".\n   To update: open admin.html, edit, download, and upload this file\n   to assets/js/ on GitHub (replacing the old one).\n   ===================================================================== */\n\nwindow.SNED_DATA = " + JSON.stringify(out, null, 2) + ";\n";
+    }
+    $("#btnDownload").addEventListener("click", function () {
+      var b = new Blob([buildJS()], { type: "text/javascript" }), a = document.createElement("a");
+      a.href = URL.createObjectURL(b); a.download = "data.js"; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 300);
+      toast("data.js downloaded — upload it to assets/js on GitHub");
+    });
+    $("#btnPreview").addEventListener("click", function () {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(D)); } catch (e) {}
+      window.open("index.html?preview=1", "_blank");
+    });
+    $("#btnReset").addEventListener("click", function () {
+      if (!confirm("Discard all unsaved changes and go back to the data currently on the site?")) return;
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      D = clone(published); normalize(D); renderAll(); $("#draftFlag").hidden = true; toast("Draft discarded");
+    });
+    $("#fileOpen").addEventListener("change", function () {
+      var f = this.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          var sandbox = {}; new Function("window", String(rd.result))(sandbox);
+          if (!sandbox.SNED_DATA) throw new Error("No SNED_DATA found");
+          D = sandbox.SNED_DATA; normalize(D); renderAll(); changed(); toast("Loaded " + f.name);
+        } catch (err) { alert("This file could not be read as an SNEd data.js file.\n\n" + err.message); }
+      };
+      rd.readAsText(f); this.value = "";
+    });
+    window.addEventListener("beforeunload", function () { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(D)); } catch (e) {} });
+
+    function renderAll() { renderGeneral(); renderSummary(); refreshDistrictList(); Object.keys(TABLES).forEach(renderTable); updateCounts(); runChecks(); }
+    renderAll();
+    try { if (localStorage.getItem(DRAFT_KEY)) $("#draftFlag").hidden = false; } catch (e) {}
+  })();
+  </script>
+</body>
+</html>
