@@ -89,6 +89,16 @@
           <p class="muted">Headline figures for School Year <span data-bind="meta.schoolYear"></span>.</p>
         </div>
         <div class="stats" id="stats"></div>
+
+        <figure class="leader reveal">
+          <img src="assets/img/supervisor.jpg" alt="" id="supPhoto" width="640" height="800" loading="lazy">
+          <figcaption>
+            <p class="eyebrow">Message from the Supervisor</p>
+            <blockquote id="supMessage"></blockquote>
+            <strong class="leader-name" data-bind="meta.supervisorName"></strong>
+            <span class="leader-role" data-bind="meta.supervisorPosition"></span>
+          </figcaption>
+        </figure>
       </div>
     </section>
 
@@ -208,23 +218,25 @@
       </div>
     </section>
 
-    <!-- UPDATES + RESOURCES -->
-    <section class="section">
-      <div class="wrap two-col">
-        <div id="updates">
-          <div class="section-head">
-            <p class="eyebrow">Updates</p>
-            <h2>Announcements</h2>
-          </div>
-          <ol class="timeline" id="announceList"></ol>
+    <!-- UPDATES -->
+    <section id="updates" class="section">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Updates</p>
+          <h2>Announcements</h2>
         </div>
-        <div id="resources">
-          <div class="section-head">
-            <p class="eyebrow">Downloads</p>
-            <h2>Policies &amp; Resources</h2>
-          </div>
-          <ul class="resources" id="resourceList"></ul>
+        <ol class="timeline" id="announceList"></ol>
+      </div>
+    </section>
+
+    <!-- RESOURCES -->
+    <section id="resources" class="section section-tint">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Downloads</p>
+          <h2>Policies &amp; Resources</h2>
         </div>
+        <ul class="resources" id="resourceList"></ul>
       </div>
     </section>
   </main>
