@@ -29,7 +29,7 @@
 :root[data-contrast="high"] a{text-decoration:underline}
 
 *{box-sizing:border-box}
-html{font-size:var(--fs);scroll-behavior:smooth;scroll-padding-top:80px}
+html{font-size:var(--fs);scroll-behavior:smooth;scroll-padding-top:72px}
 body{margin:0;font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;font-feature-settings:"cv11","ss01"}
 img{max-width:100%;height:auto;display:block}
 a{color:var(--purple-700);text-underline-offset:3px}
@@ -69,7 +69,7 @@ h3{font-weight:600;letter-spacing:-.005em}
 
 /* hero */
 .hero{border-bottom:1px solid var(--line);background:var(--bg)}
-.hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center;padding:84px 24px}
+.hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:start;padding:36px 24px 72px}
 .eyebrow{display:flex;align-items:center;gap:10px;text-transform:uppercase;letter-spacing:.16em;font-size:.7rem;font-weight:600;color:var(--gold-ink);margin:0 0 16px}
 .eyebrow::before{content:"";width:24px;height:1px;background:var(--gold)}
 .hero h1{font-size:clamp(2.1rem,4.4vw,3.3rem);font-weight:500;color:var(--ink)}
@@ -97,9 +97,9 @@ h3{font-weight:600;letter-spacing:-.005em}
 .sample-notice code{background:rgba(0,0,0,.06);padding:1px 6px;border-radius:3px}
 
 /* sections */
-.section{padding:88px 0}
+.section{padding:40px 0 64px}
 .section-tint{background:var(--tint);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.section-head{margin-bottom:40px;max-width:680px}
+.section-head{margin-bottom:28px;max-width:680px}
 .section-head h2{font-size:clamp(1.7rem,3vw,2.3rem)}
 .section-head p.muted{margin:10px 0 0}
 .row-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;max-width:none;flex-wrap:wrap}
@@ -238,7 +238,7 @@ h3{font-weight:600;letter-spacing:-.005em}
 
 /* responsive */
 @media (max-width:960px){
-  .hero-inner{grid-template-columns:1fr;gap:40px;padding:56px 24px}
+  .hero-inner{grid-template-columns:1fr;gap:40px;padding:28px 24px 56px}
   .hero-card{max-width:540px}
   .stats,.programs{grid-template-columns:repeat(2,1fr)}
   .stat:not(:nth-child(3n+1)),.program:not(:nth-child(3n+1)){padding-left:0;border-left:0}
@@ -254,7 +254,7 @@ h3{font-weight:600;letter-spacing:-.005em}
   .a11y-label{display:none}
   .a11y-inner{justify-content:center}
   .wrap{padding:0 18px}
-  .section{padding:60px 0}
+  .section{padding:32px 0 48px}
   .grid-charts{grid-template-columns:1fr}
   .span-2{grid-column:auto}
   .card{padding:20px}
