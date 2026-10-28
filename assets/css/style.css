@@ -194,9 +194,9 @@ h3{font-weight:600;letter-spacing:-.005em}
 .leader blockquote::after{content:"\201D";color:var(--gold)}
 .leader-name{display:block;font-family:var(--serif);font-size:1.2rem;font-weight:600}
 .leader-role{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
-.hero-side .hero-card{width:62%;align-self:flex-end;padding:8px}
+.hero-copy .hero-card{width:300px;max-width:100%;padding:8px;margin:0 0 28px}
 @media (max-width:960px){.hero-side{max-width:540px}}
-@media (max-width:480px){.hero-side .hero-card{width:75%;align-self:center}.leader{grid-template-columns:120px 1fr;gap:14px;padding:14px}.leader blockquote{font-size:.92rem}}
+@media (max-width:480px){.hero-copy .hero-card{width:240px}.leader{grid-template-columns:120px 1fr;gap:14px;padding:14px}.leader blockquote{font-size:.92rem}}
 
 /* updates & resources */
 .two-col{display:grid;grid-template-columns:1.1fr .9fr;gap:72px}
