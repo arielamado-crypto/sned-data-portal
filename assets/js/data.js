@@ -31,6 +31,9 @@ window.SNED_DATA = {
     phone: "(033) 000-0000",
     facebook: "https://www.facebook.com/",
     focalPerson: "Division SNEd Coordinator / Education Program Supervisor",
+    supervisorName: "Abraham Imas",
+    supervisorPosition: "Education Program Supervisor, Special Needs Education",
+    supervisorMessage: "Every learner deserves to be seen, counted and served. This portal keeps our SNEd data open and up to date so that schools, parents and partners can work together for truly inclusive education in the Division of Iloilo.",
     developer: "Ariel L. Amado, Master Teacher I"
   },
 

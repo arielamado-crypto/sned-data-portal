@@ -33,6 +33,17 @@
   $("#year").textContent = new Date().getFullYear();
   if (D.isSampleData) $("#sampleNotice").hidden = false;
 
+  /* ---------- supervisor ---------- */
+  var lead = $(".leader");
+  if (lead) {
+    if (!D.meta.supervisorName) lead.remove();
+    else {
+      $("#supMessage").textContent = D.meta.supervisorMessage || "";
+      if (!D.meta.supervisorMessage) $("#supMessage").remove();
+      $("#supPhoto").alt = "Photo of " + D.meta.supervisorName;
+    }
+  }
+
   /* ---------- icons ---------- */
   var ICON = {
     users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -225,14 +236,22 @@
   /* ---------- nav ---------- */
   var toggle = $(".nav-toggle"), nav = $("#nav");
   toggle.addEventListener("click", function () { var o = nav.classList.toggle("open"); toggle.setAttribute("aria-expanded", o); });
-  $$("#nav a").forEach(function (a) { a.addEventListener("click", function () { nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
+  var navLock = null, lockTimer;
+  function setActive(id) { $$("#nav a").forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + id); }); }
+  $$("#nav a").forEach(function (a) { a.addEventListener("click", function () {
+    nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false");
+    navLock = a.getAttribute("href").slice(1); setActive(navLock);
+    clearTimeout(lockTimer); lockTimer = setTimeout(function () { navLock = null; }, 1200);
+  }); });
   var sections = ["overview", "data", "directory", "programs", "updates", "resources", "contact"].map(function (id) { return document.getElementById(id); });
   var toTop = $(".to-top");
   window.addEventListener("scroll", function () {
+    toTop.classList.toggle("show", window.scrollY > 600);
+    if (navLock) { clearTimeout(lockTimer); lockTimer = setTimeout(function () { navLock = null; }, 400); return; }
     var y = window.scrollY + 120, cur = null;
     sections.forEach(function (s) { if (s && s.offsetTop <= y) cur = s.id; });
-    $$("#nav a").forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + cur); });
-    toTop.classList.toggle("show", window.scrollY > 600);
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = "contact";
+    setActive(cur);
   }, { passive: true });
 
   /* ---------- reveal + counters + bars ---------- */
