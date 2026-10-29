@@ -229,12 +229,12 @@
     function updateCounts() { Object.keys(TABLES).forEach(function (k) { var el = $('[data-count="' + k + '"]'); if (el) el.textContent = D[k].length; }); }
 
     /* ---------------- general + summary ---------------- */
-    var META = [["office", "Office name"], ["division", "Division"], ["address", "Address"], ["schoolYear", "School year (e.g. 2025–2026)"], ["asOf", "Data as of (e.g. October 2026)"], ["source", "Data source"], ["email", "Email", "email"], ["phone", "Phone"], ["facebook", "Facebook page link", "url"], ["focalPerson", "Focal person"], ["developer", "Developer credit"]];
+    var META = [["office", "Office name"], ["division", "Division"], ["address", "Address"], ["schoolYear", "School year (e.g. 2025–2026)"], ["asOf", "Data as of (e.g. October 2026)"], ["source", "Data source"], ["email", "Email", "email"], ["phone", "Phone"], ["facebook", "Facebook page link", "url"], ["focalPerson", "Focal person"], ["supervisorName", "Supervisor name (leave blank to hide the photo section)"], ["supervisorPosition", "Supervisor position"], ["supervisorMessage", "Supervisor message"], ["developer", "Developer credit"]];
     var SUMMARY = [["learnersWithDisabilities", "Learners with Disabilities"], ["giftedTalented", "Gifted & Talented Learners"], ["snedCenters", "SNEd Centers"], ["inclusiveSchools", "Inclusive Schools"], ["snedTeachers", "SNEd Teachers"], ["learningResourceCenters", "Learning Resource Centers"]];
 
     function renderGeneral() {
       $("#p-general").innerHTML = '<div class="card"><h2>General information</h2><p class="help">Shown in the header, hero section and footer.</p><div class="form-grid">' +
-        META.map(function (m) { return '<label' + (m[0] === "source" || m[0] === "office" ? ' class="full"' : "") + ">" + m[1] + '<input type="' + (m[2] || "text") + '" data-meta="' + m[0] + '" value="' + esc(D.meta[m[0]]) + '"></label>'; }).join("") +
+        META.map(function (m) { return '<label' + (m[0] === "source" || m[0] === "office" || m[0] === "supervisorMessage" ? ' class="full"' : "") + ">" + m[1] + '<input type="' + (m[2] || "text") + '" data-meta="' + m[0] + '" value="' + esc(D.meta[m[0]]) + '"></label>'; }).join("") +
         '<label class="full switch"><input type="checkbox" id="isSample"' + (D.isSampleData ? " checked" : "") + '> Show the yellow “Sample data” notice (uncheck once the figures are official)</label></div></div>';
       $$("[data-meta]").forEach(function (i) { i.addEventListener("input", function () { D.meta[i.getAttribute("data-meta")] = i.value; changed(); }); });
       $("#isSample").addEventListener("change", function () { D.isSampleData = this.checked; changed(); });
