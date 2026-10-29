@@ -1,7 +1,6 @@
 /* SNEd Data Portal — renders everything from window.SNED_DATA (data.js) */
-(function () {
+window.SNED_RENDER = function (D) {
   "use strict";
-  var D = window.SNED_DATA;
   var PREVIEW = /[?&]preview=1/.test(location.search);
   if (PREVIEW) {
     try { var dr = localStorage.getItem("sned:draft"); if (dr) D = JSON.parse(dr); } catch (e) {}
@@ -32,17 +31,6 @@
   var fb = $("#fbLink"); if (fb && D.meta.facebook) fb.href = D.meta.facebook;
   $("#year").textContent = new Date().getFullYear();
   if (D.isSampleData) $("#sampleNotice").hidden = false;
-
-  /* ---------- supervisor ---------- */
-  var lead = $(".leader");
-  if (lead) {
-    if (!D.meta.supervisorName) lead.remove();
-    else {
-      $("#supMessage").textContent = D.meta.supervisorMessage || "";
-      if (!D.meta.supervisorMessage) $("#supMessage").remove();
-      $("#supPhoto").alt = "Photo of " + D.meta.supervisorName;
-    }
-  }
 
   /* ---------- icons ---------- */
   var ICON = {
@@ -195,9 +183,10 @@
 
   /* ---------- programs, announcements, resources ---------- */
   $("#programList").innerHTML = D.programs.map(function (p, i) { return '<div class="program reveal"><span class="no">' + (i < 9 ? "0" : "") + (i + 1) + "</span><h3>" + esc(p.title) + "</h3><p>" + esc(p.text) + "</p></div>"; }).join("");
-  $("#announceList").innerHTML = D.announcements.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (a) {
-    var d = new Date(a.date + "T00:00:00");
-    return '<li><time datetime="' + esc(a.date) + '">' + d.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) + "</time><div><h3>" + esc(a.title) + "</h3><p>" + esc(a.text) + "</p></div></li>";
+  function pdate(v) { v = String(v || "").trim(); var d = /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v + "T00:00:00") : new Date(v); return isNaN(d) ? null : d; }
+  $("#announceList").innerHTML = D.announcements.slice().sort(function (a, b) { return ((pdate(b.date) || 0) - (pdate(a.date) || 0)); }).map(function (a) {
+    var d = pdate(a.date);
+    return '<li><time datetime="' + esc(d ? d.toISOString().slice(0, 10) : "") + '">' + (d ? d.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) : esc(a.date)) + "</time><div><h3>" + esc(a.title) + "</h3><p>" + esc(a.text) + "</p></div></li>";
   }).join("");
   $("#resourceList").innerHTML = D.resources.map(function (r) { return '<li><a href="' + esc(r.url) + '"' + (/^https?:/.test(r.url) ? ' target="_blank" rel="noopener"' : "") + '><span class="ft">' + esc(r.type) + '</span><span class="t">' + esc(r.title) + '</span><span class="arr">→</span></a></li>'; }).join("");
 
@@ -212,7 +201,7 @@
   $$("[data-csv]").forEach(function (b) { b.addEventListener("click", function () { exporters[b.getAttribute("data-csv")](); }); });
 
   /* ---------- print ---------- */
-  $("#summary .wrap").insertAdjacentHTML("afterbegin", '<div class="print-head"><img src="assets/img/division-seal.png" width="56" height="56" alt=""><div><strong>' + esc(D.meta.division) + " — SNEd Data Report</strong><br><small>SY " + esc(D.meta.schoolYear) + " · as of " + esc(D.meta.asOf) + "</small></div></div>");
+  $("#overview .wrap").insertAdjacentHTML("afterbegin", '<div class="print-head"><img src="assets/img/division-seal.png" width="56" height="56" alt=""><div><strong>' + esc(D.meta.division) + " — SNEd Data Report</strong><br><small>SY " + esc(D.meta.schoolYear) + " · as of " + esc(D.meta.asOf) + "</small></div></div>");
   $("#printBtn").addEventListener("click", function () { window.print(); });
 
   /* ---------- accessibility controls ---------- */
@@ -236,22 +225,14 @@
   /* ---------- nav ---------- */
   var toggle = $(".nav-toggle"), nav = $("#nav");
   toggle.addEventListener("click", function () { var o = nav.classList.toggle("open"); toggle.setAttribute("aria-expanded", o); });
-  var navLock = null, lockTimer;
-  function setActive(id) { $$("#nav a").forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + id); }); }
-  $$("#nav a").forEach(function (a) { a.addEventListener("click", function () {
-    nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false");
-    navLock = a.getAttribute("href").slice(1); setActive(navLock);
-    clearTimeout(lockTimer); lockTimer = setTimeout(function () { navLock = null; }, 1200);
-  }); });
+  $$("#nav a").forEach(function (a) { a.addEventListener("click", function () { nav.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); }); });
   var sections = ["overview", "data", "directory", "programs", "updates", "resources", "contact"].map(function (id) { return document.getElementById(id); });
   var toTop = $(".to-top");
   window.addEventListener("scroll", function () {
-    toTop.classList.toggle("show", window.scrollY > 600);
-    if (navLock) { clearTimeout(lockTimer); lockTimer = setTimeout(function () { navLock = null; }, 400); return; }
     var y = window.scrollY + 120, cur = null;
     sections.forEach(function (s) { if (s && s.offsetTop <= y) cur = s.id; });
-    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = "contact";
-    setActive(cur);
+    $$("#nav a").forEach(function (a) { a.classList.toggle("active", a.getAttribute("href") === "#" + cur); });
+    toTop.classList.toggle("show", window.scrollY > 600);
   }, { passive: true });
 
   /* ---------- reveal + counters + bars ---------- */
@@ -268,4 +249,5 @@
 
   var rt, lastW = window.innerWidth; window.addEventListener("resize", function () { if (window.innerWidth === lastW) return; lastW = window.innerWidth; clearTimeout(rt); rt = setTimeout(buildCharts, 250); });
   buildCharts();
-})();
+};
+window.SNED_RENDER(window.SNED_DATA);
