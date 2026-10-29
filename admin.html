@@ -36,7 +36,7 @@
     .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px}
     .form-grid label{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:500;color:var(--ink-2)}
     .form-grid label.full{grid-column:1/-1}
-    input[type=text],input[type=number],input[type=date],input[type=email],input[type=url],select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);width:100%}
+    input[type=text],input[type=password],input[type=number],input[type=date],input[type=email],input[type=url],select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);width:100%}
     input:focus,select:focus,textarea:focus{outline:none;border-color:var(--purple-500);box-shadow:0 0 0 3px color-mix(in srgb,var(--purple-500) 20%,transparent)}
     textarea{resize:vertical;min-height:62px}
     .form-grid label.switch{flex-direction:row;align-items:center;gap:10px;font-weight:500;color:var(--ink)}
@@ -73,6 +73,21 @@
       .form-grid{grid-template-columns:1fr}
       .tbl-actions .hint{margin-left:0;width:100%}
     }
+    /* GitHub publish */
+    .modal{position:fixed;inset:0;background:rgba(15,10,30,.55);display:none;align-items:flex-start;justify-content:center;z-index:90;padding:40px 16px;overflow-y:auto}
+    .modal.open{display:flex}
+    .modal-box{background:var(--surface);color:var(--ink);border-radius:8px;max-width:560px;width:100%;padding:28px;border:1px solid var(--line)}
+    .modal-box h2{font-family:var(--serif);font-weight:500;font-size:1.45rem;margin-bottom:6px}
+    .modal-box .help{color:var(--muted);font-size:.88rem;margin:0 0 18px}
+    .modal-box .form-grid{grid-template-columns:1fr 1fr}
+    .modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+    .gh-status{font-size:.82rem;color:var(--muted);margin-top:12px;min-height:1.2em}
+    .gh-status.ok{color:#1d6b3f} .gh-status.err{color:#b3261e}
+    .howto{font-size:.84rem;color:var(--ink-2);background:var(--tint);border:1px solid var(--line);border-radius:6px;padding:12px 14px 12px 30px;margin:16px 0 0}
+    .howto li{margin:3px 0}
+    .warnline{font-size:.8rem;color:var(--gold-ink);margin-top:8px}
+    .gh-chip{font-size:.72rem;color:#c9bff0;margin-left:6px}
+    @media (max-width:560px){.modal-box .form-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -81,13 +96,15 @@
       <img src="assets/img/division-seal.png" alt="" width="44" height="44">
       <div class="ed-title">
         <strong>SNEd Data Editor <span class="draft-flag" id="draftFlag" hidden>Unsaved draft</span></strong>
-        <small>Fill in the forms → Preview → Download data.js → Upload to GitHub</small>
+        <small>Fill in the forms → Preview → Publish to GitHub</small>
       </div>
       <div class="ed-actions">
         <button class="btn btn-light" type="button" id="btnPreview">Preview site</button>
         <label class="btn btn-light" style="margin:0">Open data.js<input type="file" id="fileOpen" accept=".js,text/javascript" hidden></label>
         <button class="btn btn-light" type="button" id="btnReset">Discard draft</button>
-        <button class="btn btn-gold" type="button" id="btnDownload">Download data.js</button>
+        <button class="btn btn-light" type="button" id="btnDownload">Download data.js</button>
+        <button class="btn btn-light" type="button" id="btnGhSettings" title="GitHub connection settings">GitHub settings</button>
+        <button class="btn btn-gold" type="button" id="btnPublish">Publish to GitHub</button>
       </div>
     </div>
   </header>
@@ -95,6 +112,35 @@
   <div class="wrap layout">
     <nav class="tabs" id="tabs" aria-label="Data sections"></nav>
     <main id="panels"></main>
+  </div>
+
+  <div class="modal" id="ghModal" role="dialog" aria-modal="true" aria-labelledby="ghTitle">
+    <div class="modal-box">
+      <h2 id="ghTitle">Connect to GitHub</h2>
+      <p class="help">Paste your GitHub token once. After that, <b>Publish to GitHub</b> updates the live site directly, with no download or upload.</p>
+      <div class="form-grid">
+        <label>GitHub username<input type="text" id="ghOwner" autocomplete="off" spellcheck="false"></label>
+        <label>Repository name<input type="text" id="ghRepo" autocomplete="off" spellcheck="false"></label>
+        <label>Branch<input type="text" id="ghBranch" autocomplete="off" spellcheck="false"></label>
+        <label>File path<input type="text" id="ghPath" autocomplete="off" spellcheck="false"></label>
+        <label class="full">Token<input type="password" id="ghToken" autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+        <label class="full switch"><input type="checkbox" id="ghRemember"> Remember the token on this computer</label>
+      </div>
+      <p class="warnline" id="ghRememberNote">Not ticked: the token is forgotten when you close this browser tab. Tick it only on your own computer.</p>
+      <ol class="howto">
+        <li>On github.com, go to <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
+        <li>Repository access: <b>Only select repositories</b> → choose this site's repository.</li>
+        <li>Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
+        <li>Generate, copy the token, and paste it above. Never share it in chats or emails.</li>
+      </ol>
+      <div class="gh-status" id="ghStatus" aria-live="polite"></div>
+      <div class="modal-foot">
+        <button class="btn btn-outline btn-sm" type="button" id="ghForget">Forget token</button>
+        <button class="btn btn-outline btn-sm" type="button" id="ghTest">Test connection</button>
+        <button class="btn btn-outline btn-sm" type="button" id="ghClose">Close</button>
+        <button class="btn btn-primary btn-sm" type="button" id="ghSave">Save</button>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -183,12 +229,12 @@
     function updateCounts() { Object.keys(TABLES).forEach(function (k) { var el = $('[data-count="' + k + '"]'); if (el) el.textContent = D[k].length; }); }
 
     /* ---------------- general + summary ---------------- */
-    var META = [["office", "Office name"], ["division", "Division"], ["address", "Address"], ["schoolYear", "School year (e.g. 2025–2026)"], ["asOf", "Data as of (e.g. October 2026)"], ["source", "Data source"], ["email", "Email", "email"], ["phone", "Phone"], ["facebook", "Facebook page link", "url"], ["focalPerson", "Focal person"], ["supervisorName", "Supervisor name (leave blank to hide the photo section)"], ["supervisorPosition", "Supervisor position"], ["supervisorMessage", "Supervisor message"], ["developer", "Developer credit"]];
+    var META = [["office", "Office name"], ["division", "Division"], ["address", "Address"], ["schoolYear", "School year (e.g. 2025–2026)"], ["asOf", "Data as of (e.g. October 2026)"], ["source", "Data source"], ["email", "Email", "email"], ["phone", "Phone"], ["facebook", "Facebook page link", "url"], ["focalPerson", "Focal person"], ["developer", "Developer credit"]];
     var SUMMARY = [["learnersWithDisabilities", "Learners with Disabilities"], ["giftedTalented", "Gifted & Talented Learners"], ["snedCenters", "SNEd Centers"], ["inclusiveSchools", "Inclusive Schools"], ["snedTeachers", "SNEd Teachers"], ["learningResourceCenters", "Learning Resource Centers"]];
 
     function renderGeneral() {
       $("#p-general").innerHTML = '<div class="card"><h2>General information</h2><p class="help">Shown in the header, hero section and footer.</p><div class="form-grid">' +
-        META.map(function (m) { return '<label' + (m[0] === "source" || m[0] === "office" || m[0] === "supervisorMessage" ? ' class="full"' : "") + ">" + m[1] + '<input type="' + (m[2] || "text") + '" data-meta="' + m[0] + '" value="' + esc(D.meta[m[0]]) + '"></label>'; }).join("") +
+        META.map(function (m) { return '<label' + (m[0] === "source" || m[0] === "office" ? ' class="full"' : "") + ">" + m[1] + '<input type="' + (m[2] || "text") + '" data-meta="' + m[0] + '" value="' + esc(D.meta[m[0]]) + '"></label>'; }).join("") +
         '<label class="full switch"><input type="checkbox" id="isSample"' + (D.isSampleData ? " checked" : "") + '> Show the yellow “Sample data” notice (uncheck once the figures are official)</label></div></div>';
       $$("[data-meta]").forEach(function (i) { i.addEventListener("input", function () { D.meta[i.getAttribute("data-meta")] = i.value; changed(); }); });
       $("#isSample").addEventListener("change", function () { D.isSampleData = this.checked; changed(); });
@@ -305,7 +351,7 @@
       var warn = items.filter(function (i) { return !i.ok; }).length;
       p.innerHTML = '<div class="card"><h2>Check &amp; publish</h2><p class="help">' + (warn ? warn + " item(s) need attention. Warnings don't block downloading." : "All checks passed. Ready to publish.") + '</p><ul class="checks">' +
         items.map(function (i) { return '<li class="' + (i.ok ? "ok" : "warn") + '"><span>' + (i.ok ? "✓" : "!") + "</span><span>" + i.t + "</span></li>"; }).join("") + "</ul></div>" +
-        '<div class="card"><h2>How to publish</h2><ol class="steps"><li>Click <b>Preview site</b> to see your changes.</li><li>Click <b>Download data.js</b> (top right).</li><li>On GitHub, open your repository → <b>assets</b> → <b>js</b> → <b>Add file</b> → <b>Upload files</b>.</li><li>Drag in the downloaded <b>data.js</b> → <b>Commit changes</b>. It replaces the old file.</li><li>Wait about a minute, then refresh the site. If the old data still shows, press Ctrl+F5.</li></ol></div>';
+        '<div class="card"><h2>How to publish</h2><ol class="steps"><li>Click <b>Preview site</b> to see your changes.</li><li>Click <b>Publish to GitHub</b> (top right). The first time, paste your GitHub token in <b>GitHub settings</b>.</li><li>Wait about a minute, then refresh the site. If the old data still shows, press Ctrl+F5.</li></ol><p class="help" style="margin:14px 0 0">No token? Click <b>Download data.js</b> instead, then on GitHub open <b>assets → js → Add file → Upload files</b>, drag it in and click <b>Commit changes</b>.</p></div>';
     }
 
     /* ---------------- top actions ---------------- */
@@ -342,9 +388,117 @@
     });
     window.addEventListener("beforeunload", function () { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(D)); } catch (e) {} });
 
+    /* ---------------- GitHub publishing ---------------- */
+    var GH_CFG_KEY = "sned:gh", GH_TOKEN_KEY = "sned:ghtoken";
+    function guessRepo() {
+      var h = location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i), seg = location.pathname.split("/").filter(Boolean)[0];
+      return { owner: h ? h[1] : "", repo: h && seg && !/\.html?$/i.test(seg) ? seg : "" };
+    }
+    function ghCfg() {
+      var c = {}; try { c = JSON.parse(localStorage.getItem(GH_CFG_KEY) || "{}"); } catch (e) {}
+      var g = guessRepo();
+      return { owner: c.owner || g.owner, repo: c.repo || g.repo, branch: c.branch || "main", path: c.path || "assets/js/data.js", remember: !!c.remember };
+    }
+    function ghToken() {
+      try { return sessionStorage.getItem(GH_TOKEN_KEY) || localStorage.getItem(GH_TOKEN_KEY) || ""; } catch (e) { return ""; }
+    }
+    function saveGh(cfg, token) {
+      try {
+        localStorage.setItem(GH_CFG_KEY, JSON.stringify({ owner: cfg.owner, repo: cfg.repo, branch: cfg.branch, path: cfg.path, remember: cfg.remember }));
+        sessionStorage.removeItem(GH_TOKEN_KEY); localStorage.removeItem(GH_TOKEN_KEY);
+        if (token) (cfg.remember ? localStorage : sessionStorage).setItem(GH_TOKEN_KEY, token);
+      } catch (e) {}
+    }
+    function readForm() {
+      return { owner: $("#ghOwner").value.trim(), repo: $("#ghRepo").value.trim(), branch: $("#ghBranch").value.trim() || "main",
+        path: $("#ghPath").value.trim().replace(/^\/+/, "") || "assets/js/data.js", remember: $("#ghRemember").checked };
+    }
+    function ghStatus(msg, cls) { var el = $("#ghStatus"); el.textContent = msg; el.className = "gh-status" + (cls ? " " + cls : ""); }
+    function openGh() {
+      var c = ghCfg();
+      $("#ghOwner").value = c.owner; $("#ghRepo").value = c.repo; $("#ghBranch").value = c.branch; $("#ghPath").value = c.path;
+      $("#ghRemember").checked = c.remember; $("#ghToken").value = ghToken(); ghStatus("");
+      $("#ghModal").classList.add("open"); setTimeout(function () { (c.owner ? $("#ghToken") : $("#ghOwner")).focus(); }, 30);
+    }
+    function closeGh() { $("#ghModal").classList.remove("open"); }
+
+    function api(cfg, token, method, body) {
+      var url = "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + "/contents/" +
+        cfg.path.split("/").map(encodeURIComponent).join("/") + (method === "GET" ? "?ref=" + encodeURIComponent(cfg.branch) + "&t=" + Date.now() : "");
+      return fetch(url, { method: method, cache: "no-store", headers: { "Accept": "application/vnd.github+json", "Authorization": "Bearer " + token, "X-GitHub-Api-Version": "2022-11-28" },
+        body: body ? JSON.stringify(body) : undefined }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = new Error(j.message || ("HTTP " + r.status)); e.status = r.status; throw e; } return j; });
+      });
+    }
+    function explain(e) {
+      if (e.status === 401) return "The token was not accepted. It may be mistyped or expired. Create a new token and paste it again.";
+      if (e.status === 403) return "The token has no permission to change this repository. Give it Contents: Read and write for this repository.";
+      if (e.status === 404) return "Repository or file not found. Check the username, repository name, branch and file path. A fine-grained token must also be given access to this repository.";
+      if (e.status === 409 || e.status === 422) return "The file changed on GitHub while you were editing. Please try Publish again.";
+      if (!e.status) return "Could not reach GitHub. Check your internet connection.";
+      return "GitHub said: " + e.message;
+    }
+    function b64(str) { var bytes = new TextEncoder().encode(str), bin = ""; for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+    function unb64(b) { var bin = atob(String(b).replace(/\s/g, "")), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new TextDecoder().decode(arr); }
+
+    $("#btnGhSettings").addEventListener("click", openGh);
+    $("#ghClose").addEventListener("click", closeGh);
+    $("#ghModal").addEventListener("click", function (e) { if (e.target === this) closeGh(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeGh(); });
+    $("#ghSave").addEventListener("click", function () {
+      var c = readForm(), t = $("#ghToken").value.trim();
+      if (!c.owner || !c.repo) { ghStatus("Please enter your GitHub username and repository name.", "err"); return; }
+      saveGh(c, t); closeGh(); toast(t ? "GitHub settings saved" : "Settings saved (no token yet)");
+    });
+    $("#ghForget").addEventListener("click", function () { $("#ghToken").value = ""; saveGh(readForm(), ""); ghStatus("Token removed from this computer.", "ok"); });
+    $("#ghTest").addEventListener("click", function () {
+      var c = readForm(), t = $("#ghToken").value.trim();
+      if (!t) { ghStatus("Paste your token first.", "err"); return; }
+      ghStatus("Checking…");
+      api(c, t, "GET").then(function () { saveGh(c, t); ghStatus("Connected. The token can read " + c.owner + "/" + c.repo + ". Click Save, then Publish.", "ok"); })
+        .catch(function (e) { ghStatus(explain(e), "err"); });
+    });
+
+    var publishing = false;
+    $("#btnPublish").addEventListener("click", function () {
+      if (publishing) return;
+      var c = ghCfg(), t = ghToken();
+      if (!c.owner || !c.repo || !t) { openGh(); ghStatus("Connect your GitHub repository first, then click Publish again."); return; }
+      var warn = $$("#p-check .checks li.warn").length;
+      if (!confirm("Publish these changes to the live site (" + c.owner + "/" + c.repo + ")?" + (warn ? "\n\nNote: " + warn + " check(s) need attention. See the Check & publish tab." : ""))) return;
+      publishing = true; var btn = this, label = btn.textContent; btn.textContent = "Publishing…"; btn.disabled = true;
+      var content = buildJS();
+      function put(sha) { return api(c, t, "PUT", { message: "Update SNEd data (" + new Date().toLocaleString("en-PH") + ")", content: b64(content), sha: sha, branch: c.branch }); }
+      api(c, t, "GET").then(function (f) { return put(f.sha); }, function (e) { if (e.status === 404) return put(undefined); throw e; })
+        .catch(function (e) { if (e.status === 409) return api(c, t, "GET").then(function (f) { return put(f.sha); }); throw e; })
+        .then(function () {
+          published = clone(D);
+          clearTimeout(saveT);
+          try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+          $("#draftFlag").hidden = true;
+          toast("Published. The live site updates in about 1 minute.");
+          setTimeout(function () { alert("Published to GitHub.\n\nThe live site will show the new data in about 1 minute. If it still shows the old numbers, press Ctrl+F5 on the site."); }, 200);
+        })
+        .catch(function (e) { alert("Could not publish.\n\n" + explain(e)); })
+        .then(function () { publishing = false; btn.textContent = label; btn.disabled = false; });
+    });
+
+    /* Load the newest data.js straight from GitHub (avoids old cached copies) */
+    function loadLatestFromGitHub() {
+      var c = ghCfg(), t = ghToken(); if (!c.owner || !c.repo || !t) return;
+      var hasDraft = false; try { hasDraft = !!localStorage.getItem(DRAFT_KEY); } catch (e) {}
+      api(c, t, "GET").then(function (f) {
+        var sb = {}; new Function("window", unb64(f.content))(sb);
+        if (!sb.SNED_DATA) return;
+        published = clone(sb.SNED_DATA);
+        if (!hasDraft) { D = clone(published); normalize(D); renderAll(); }
+      }).catch(function (e) { console.warn("[SNEd] Could not load latest data from GitHub:", e.message); });
+    }
+
     function renderAll() { renderGeneral(); renderSummary(); refreshDistrictList(); Object.keys(TABLES).forEach(renderTable); updateCounts(); runChecks(); }
     renderAll();
     try { if (localStorage.getItem(DRAFT_KEY)) $("#draftFlag").hidden = false; } catch (e) {}
+    loadLatestFromGitHub();
   })();
   </script>
 </body>
