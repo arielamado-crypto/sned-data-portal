@@ -107,7 +107,9 @@
     return { district: x.district, diagnosis: split ? (+dg || 0) : null, manifestations: split ? (+mf || 0) : null, lwd: split ? (+dg || 0) + (+mf || 0) : (+x.lwd || 0), schools: +x.schools || 0 };
   });
   var distSplit = DIST.some(function (x) { return x.diagnosis !== null; });
+  var NOREP = DIST.filter(function (x) { return !x.lwd; }).map(function (x) { return x.district; });
   $("#tblDistrict tbody").innerHTML = DIST.map(function (x) {
+    if (!x.lwd) return "<tr><td>" + esc(x.district) + '</td><td class="num muted" colspan="' + (distSplit ? 4 : 2) + '"><i>No learners reported yet</i></td></tr>';
     return "<tr><td>" + esc(x.district) + "</td>" + (distSplit ? '<td class="num">' + fmt(x.diagnosis) + '</td><td class="num">' + fmt(x.manifestations) + "</td>" : "") + '<td class="num"><b>' + fmt(x.lwd) + '</b></td><td class="num">' + fmt(x.schools) + "</td></tr>";
   }).join("");
   $("#tblDistrict thead").innerHTML = "<tr><th scope=\"col\">School district</th>" + (distSplit ? '<th scope="col" class="num">With diagnosis</th><th scope="col" class="num">With manifestations</th>' : "") + '<th scope="col" class="num">Total learners</th><th scope="col" class="num">Schools serving LSENs</th></tr>';
@@ -181,7 +183,9 @@
       charts.trend = new Chart($("#chTrend"), { type: "line", options: o3, data: { labels: D.trend.map(function (x) { return x.sy; }), datasets: tsets } });
     } else if (trendCard) trendCard.hidden = true;
 
-    var dsorted = DIST.slice().sort(function (a, b) { return b.lwd - a.lwd; });
+    var dsorted = DIST.filter(function (x) { return x.lwd > 0; }).sort(function (a, b) { return b.lwd - a.lwd; });
+    var dnote = $("#distNoData");
+    if (dnote) { dnote.textContent = NOREP.length ? "No learners reported yet: " + NOREP.join(", ") + "." : ""; dnote.style.display = NOREP.length ? "" : "none"; }
     var o4 = baseOpts(); o4.indexAxis = "y";
     o4.scales.x.stacked = true; o4.scales.y.stacked = true; o4.scales.y.grid = { display: false };
     o4.scales.y.ticks.autoSkip = false; o4.scales.y.ticks.font = { size: 11 };
@@ -203,7 +207,7 @@
 
   /* ---------- directory ---------- */
   var NODIST = "__none";
-  var districts = Array.from(new Set(D.schools.map(function (s) { return s.district || NODIST; }))).sort();
+  var districts = Array.from(new Set(D.schools.map(function (s) { return s.district || NODIST; }).concat(NOREP))).sort();
   var types = Array.from(new Set(D.schools.map(function (s) { return s.type; }).filter(Boolean))).sort();
   districts.forEach(function (d) { $("#fDistrict").insertAdjacentHTML("beforeend", '<option value="' + esc(d) + '">' + (d === NODIST ? "No district listed" : esc(d)) + "</option>"); });
   types.forEach(function (t) { $("#fType").insertAdjacentHTML("beforeend", "<option>" + esc(t) + "</option>"); });
@@ -227,7 +231,8 @@
       return (!q || hay.indexOf(q) > -1) && (!fd || (s.district || NODIST) === fd) && (!ft || s.type === ft);
     });
     $("#resultCount").textContent = "Showing " + Math.min(shown, list.length) + " of " + list.length + (list.length === D.schools.length ? " schools" : " matching schools (" + D.schools.length + " in all)");
-    $("#schoolGrid").innerHTML = list.length ? list.slice(0, shown).map(schoolCard).join("") : '<div class="empty">No schools match your search.</div>';
+    var emptyMsg = fd && NOREP.indexOf(fd) > -1 ? "No learners reported yet for " + esc(fd) + " district in the current data." : "No schools match your search.";
+    $("#schoolGrid").innerHTML = list.length ? list.slice(0, shown).map(schoolCard).join("") : '<div class="empty">' + emptyMsg + "</div>";
     var more = $("#moreSchools"); if (more) more.style.display = shown >= list.length ? "none" : "";
   }
   ["#q", "#fDistrict", "#fType"].forEach(function (s) { $(s).addEventListener("input", function () { renderSchools(true); }); });
