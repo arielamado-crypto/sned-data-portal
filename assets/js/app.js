@@ -5,7 +5,7 @@
   var PREVIEW = /[?&]preview=1/.test(location.search);
   if (PREVIEW) {
     try { var dr = localStorage.getItem("sned:draft"); if (dr) D = JSON.parse(dr); } catch (e) {}
-    document.body.insertAdjacentHTML("afterbegin", '<div style="position:sticky;top:0;z-index:60;background:#f5a51c;color:#2a1600;text-align:center;padding:8px 12px;font-weight:600;font-size:.9rem">PREVIEW of your unsaved draft — not yet published. Close this tab and click “Download data.js” in the editor to publish.</div>');
+    document.body.insertAdjacentHTML("afterbegin", '<div style="position:sticky;top:0;z-index:60;background:#f5a51c;color:#2a1600;text-align:center;padding:8px 12px;font-weight:600;font-size:.9rem">PREVIEW of your unsaved draft — not yet published. Close this tab and click “Publish to GitHub” in the editor to publish.</div>');
   }
   if (!D) { document.body.insertAdjacentHTML("afterbegin", "<p style='padding:20px;background:#fee;color:#900'>data.js could not be loaded. Check the file for a missing comma or bracket.</p>"); return; }
 
@@ -60,18 +60,24 @@
   var svg = function (n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[n] || ICON.star) + "</svg>"; };
 
   /* ---------- stat cards ---------- */
-  var S = D.summary;
-  var lwdF = sum(D.byDisability, function (x) { return x.female; });
-  var stats = [
-    { n: S.learnersWithDisabilities, l: "Learners with Disabilities", s: "Enrolled and tagged in LIS", i: "users", c: "var(--purple-600)" },
-    { n: S.giftedTalented, l: "Gifted & Talented Learners", s: "Identified and served", i: "star", c: "var(--gold)" },
-    { n: S.snedCenters, l: "SNEd Centers", s: "Division-recognized centers", i: "home", c: "var(--blue)" },
-    { n: S.inclusiveSchools, l: "Inclusive Schools", s: "Schools serving LWDs", i: "school", c: "var(--teal)" },
-    { n: S.snedTeachers, l: "SNEd Teachers", s: "SPED-trained personnel", i: "teacher", c: "var(--rose)" },
-    { n: S.learningResourceCenters, l: "Learning Resource Centers", s: "ILRCs and support hubs", i: "book", c: "var(--purple-500)" }
+  var S = D.summary || {};
+  function has(v) { return v !== null && v !== undefined && v !== "" && isFinite(Number(v)); }
+  var allStats = [
+    { n: S.learnersTotal, l: "Learners with Special Education Needs", s: "With a diagnosis or with manifestations" },
+    { n: S.withDiagnosis, l: "With Medical Diagnosis", s: "Diagnosed by a licensed medical specialist" },
+    { n: S.withManifestations, l: "With Manifestations", s: "Observed difficulties, no diagnosis yet" },
+    { n: S.schoolsWithLsen, l: "Schools Serving LSENs", s: "With at least one LSEN enrolled" },
+    { n: S.learnersWithDisabilities, l: "Learners with Disabilities", s: "Enrolled and tagged in LIS" },
+    { n: S.inclusiveSchools, l: "Inclusive Schools", s: "Schools serving LWDs" },
+    { n: S.snedCenters, l: "SNEd Centers", s: "Division-recognized centers" },
+    { n: S.snedTeachers, l: "SNEd Teachers", s: "SPED-trained personnel" },
+    { n: S.giftedTalented, l: "Gifted & Talented Learners", s: "Identified and served" },
+    { n: S.learningResourceCenters, l: "Learning Resource Centers", s: "ILRCs and support hubs" }
   ];
-  $("#stats").innerHTML = stats.map(function (x) {
-    return '<div class="stat reveal"><div class="num" data-count="' + x.n + '">0</div><div class="lbl">' + esc(x.l) + '</div><div class="sub">' + esc(x.s) + "</div></div>";
+  if (has(S.learnersTotal)) allStats = allStats.filter(function (x) { return x.l !== "Learners with Disabilities"; });
+  if (has(S.schoolsWithLsen)) allStats = allStats.filter(function (x) { return x.l !== "Inclusive Schools"; });
+  $("#stats").innerHTML = allStats.filter(function (x) { return has(x.n); }).map(function (x) {
+    return '<div class="stat reveal"><div class="num" data-count="' + Number(x.n) + '">0</div><div class="lbl">' + esc(x.l) + '</div><div class="sub">' + esc(x.s) + "</div></div>";
   }).join("");
 
   function countUp(el) {
@@ -82,19 +88,30 @@
   }
 
   /* ---------- tables ---------- */
-  var dis = D.byDisability.map(function (x) { return { category: x.category, male: x.male, female: x.female, total: x.male + x.female }; }).sort(function (a, b) { return b.total - a.total; });
-  var disTotal = sum(dis, function (x) { return x.total; });
-  var disMax = Math.max.apply(null, dis.map(function (x) { return x.total; }));
-  $("#tblDisability tbody").innerHTML = dis.map(function (x) {
-    var pct = disTotal ? x.total / disTotal * 100 : 0;
-    return "<tr><td>" + esc(x.category) + '</td><td class="num">' + fmt(x.male) + '</td><td class="num">' + fmt(x.female) + '</td><td class="num"><b>' + fmt(x.total) + '</b></td><td class="num"><span class="share"><i style="width:' + (x.total / disMax * 60).toFixed(0) + 'px"></i>' + pct.toFixed(1) + "%</span></td></tr>";
-  }).join("");
-  $("#tblDisability tfoot").innerHTML = '<tr><td>Total</td><td class="num">' + fmt(sum(dis, function (x) { return x.male; })) + '</td><td class="num">' + fmt(lwdF) + '</td><td class="num">' + fmt(disTotal) + '</td><td class="num">100%</td></tr>';
+  function prep(arr) { return (arr || []).map(function (x) { return { category: x.category, male: +x.male || 0, female: +x.female || 0, total: (+x.male || 0) + (+x.female || 0) }; }).sort(function (a, b) { return b.total - a.total; }); }
+  function fillTable(sel, rows) {
+    var tot = sum(rows, function (x) { return x.total; }), mx = Math.max.apply(null, rows.map(function (x) { return x.total; }).concat([1]));
+    $(sel + " tbody").innerHTML = rows.map(function (x) {
+      var pct = tot ? x.total / tot * 100 : 0;
+      return "<tr><td>" + esc(x.category) + '</td><td class="num">' + fmt(x.male) + '</td><td class="num">' + fmt(x.female) + '</td><td class="num"><b>' + fmt(x.total) + '</b></td><td class="num"><span class="share"><i style="width:' + (x.total / mx * 60).toFixed(0) + 'px"></i>' + pct.toFixed(1) + "%</span></td></tr>";
+    }).join("");
+    $(sel + " tfoot").innerHTML = '<tr><td>Total</td><td class="num">' + fmt(sum(rows, function (x) { return x.male; })) + '</td><td class="num">' + fmt(sum(rows, function (x) { return x.female; })) + '</td><td class="num">' + fmt(tot) + '</td><td class="num">100%</td></tr>';
+  }
+  var dis = prep(D.byDisability), man = prep(D.byManifestation);
+  fillTable("#tblDisability", dis);
+  if (man.length) fillTable("#tblManifest", man);
+  else $$(".mani-only").forEach(function (el) { el.remove(); });
 
-  $("#tblDistrict tbody").innerHTML = D.byDistrict.map(function (x) {
-    return "<tr><td>" + esc(x.district) + '</td><td class="num">' + fmt(x.lwd) + '</td><td class="num">' + fmt(x.gifted) + '</td><td class="num">' + fmt(x.centers) + '</td><td class="num">' + fmt(x.schools) + "</td></tr>";
+  var DIST = (D.byDistrict || []).map(function (x) {
+    var dg = x.diagnosis, mf = x.manifestations, split = has(dg) || has(mf);
+    return { district: x.district, diagnosis: split ? (+dg || 0) : null, manifestations: split ? (+mf || 0) : null, lwd: split ? (+dg || 0) + (+mf || 0) : (+x.lwd || 0), schools: +x.schools || 0 };
+  });
+  var distSplit = DIST.some(function (x) { return x.diagnosis !== null; });
+  $("#tblDistrict tbody").innerHTML = DIST.map(function (x) {
+    return "<tr><td>" + esc(x.district) + "</td>" + (distSplit ? '<td class="num">' + fmt(x.diagnosis) + '</td><td class="num">' + fmt(x.manifestations) + "</td>" : "") + '<td class="num"><b>' + fmt(x.lwd) + '</b></td><td class="num">' + fmt(x.schools) + "</td></tr>";
   }).join("");
-  $("#tblDistrict tfoot").innerHTML = '<tr><td>Division total</td><td class="num">' + fmt(sum(D.byDistrict, function (x) { return x.lwd; })) + '</td><td class="num">' + fmt(sum(D.byDistrict, function (x) { return x.gifted; })) + '</td><td class="num">' + fmt(sum(D.byDistrict, function (x) { return x.centers; })) + '</td><td class="num">' + fmt(sum(D.byDistrict, function (x) { return x.schools; })) + "</td></tr>";
+  $("#tblDistrict thead").innerHTML = "<tr><th scope=\"col\">School district</th>" + (distSplit ? '<th scope="col" class="num">With diagnosis</th><th scope="col" class="num">With manifestations</th>' : "") + '<th scope="col" class="num">Total learners</th><th scope="col" class="num">Schools serving LSENs</th></tr>';
+  $("#tblDistrict tfoot").innerHTML = "<tr><td>Total</td>" + (distSplit ? '<td class="num">' + fmt(sum(DIST, function (x) { return x.diagnosis; })) + '</td><td class="num">' + fmt(sum(DIST, function (x) { return x.manifestations; })) + "</td>" : "") + '<td class="num">' + fmt(sum(DIST, function (x) { return x.lwd; })) + '</td><td class="num">' + fmt(sum(DIST, function (x) { return x.schools; })) + "</td></tr>";
 
   /* ---------- colors ---------- */
   function darkNow() { var t = root.getAttribute("data-theme"); return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches; }
@@ -103,12 +120,13 @@
   setCols();
 
   /* ---------- sex split ---------- */
-  var lwdM = sum(D.byDisability, function (x) { return x.male; });
+  var lwdM = sum(dis.concat(man), function (x) { return x.male; });
+  var lwdF = sum(dis.concat(man), function (x) { return x.female; });
   var all = lwdM + lwdF || 1;
   $("#sexSplit").innerHTML =
     '<div class="sex-row"><div class="top"><span>Male</span><b>' + fmt(lwdM) + '</b></div><div class="bar"><i data-w="' + (lwdM / all * 100).toFixed(1) + '" style="width:0;background:' + COL.a + '"></i></div></div>' +
     '<div class="sex-row"><div class="top"><span>Female</span><b>' + fmt(lwdF) + '</b></div><div class="bar"><i data-w="' + (lwdF / all * 100).toFixed(1) + '" style="width:0;background:' + COL.b + '"></i></div></div>' +
-    '<p class="sex-note">Male learners make up <b>' + (lwdM / all * 100).toFixed(1) + "%</b> of learners with disabilities. Ratio: " + (lwdM / (lwdF || 1)).toFixed(2) + " males for every female.</p>";
+    '<p class="sex-note">Male learners make up <b>' + (lwdM / all * 100).toFixed(1) + "%</b> of " + (man.length ? "all learners with special education needs" : "learners with disabilities") + ". Ratio: " + (lwdM / (lwdF || 1)).toFixed(2) + " males for every female.</p>";
 
   /* ---------- charts ---------- */
   var charts = {};
@@ -130,16 +148,20 @@
     setCols();
     var narrow = window.innerWidth < 680;
 
-    var o1 = baseOpts(); o1.indexAxis = "y";
-    o1.scales.x.stacked = true; o1.scales.y.stacked = true; o1.scales.y.grid = { display: false };
-    o1.scales.y.ticks.callback = function (v) { var l = this.getLabelForValue(v); return narrow && l.length > 22 ? l.slice(0, 20) + "…" : l; };
-    charts.dis = new Chart($("#chDisability"), { type: "bar", options: o1, data: {
-      labels: dis.map(function (x) { return x.category; }),
-      datasets: sexMode === "both"
-        ? [{ label: "Male", data: dis.map(function (x) { return x.male; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .6 },
-           { label: "Female", data: dis.map(function (x) { return x.female; }), backgroundColor: COL.b, borderRadius: 2, barPercentage: .6 }]
-        : [{ label: "Total", data: dis.map(function (x) { return x.total; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .6 }]
-    } });
+    function catChart(key, canvas, rows) {
+      var o = baseOpts(); o.indexAxis = "y";
+      o.scales.x.stacked = true; o.scales.y.stacked = true; o.scales.y.grid = { display: false };
+      o.scales.y.ticks.callback = function (v) { var l = this.getLabelForValue(v); var max = narrow ? 22 : 44; return l.length > max ? l.slice(0, max - 2) + "…" : l; };
+      charts[key] = new Chart(canvas, { type: "bar", options: o, data: {
+        labels: rows.map(function (x) { return x.category; }),
+        datasets: sexMode === "both"
+          ? [{ label: "Male", data: rows.map(function (x) { return x.male; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .6 },
+             { label: "Female", data: rows.map(function (x) { return x.female; }), backgroundColor: COL.b, borderRadius: 2, barPercentage: .6 }]
+          : [{ label: "Total", data: rows.map(function (x) { return x.total; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .6 }]
+      } });
+    }
+    catChart("dis", $("#chDisability"), dis);
+    if (man.length && $("#chManifest")) catChart("man", $("#chManifest"), man);
 
     var o2 = baseOpts(); delete o2.scales; o2.cutout = "72%"; o2.plugins.legend = { display: false };
     o2.plugins.tooltip.callbacks.label = function (c) { return " " + c.label + ": " + fmt(c.parsed); };
@@ -149,22 +171,28 @@
     } });
     $("#levelLegend").innerHTML = D.byLevel.map(function (x, i) { return '<li><i style="background:' + PAL[i] + '"></i>' + esc(x.level) + "<b>" + fmt(x.count) + "</b></li>"; }).join("");
 
-    var o3 = baseOpts(); o3.interaction = { mode: "index", intersect: false };
-    o3.scales.x.grid = { display: false };
-    charts.trend = new Chart($("#chTrend"), { type: "line", options: o3, data: {
-      labels: D.trend.map(function (x) { return x.sy; }),
-      datasets: [
-        { label: "Learners with Disabilities", data: D.trend.map(function (x) { return x.lwd; }), borderColor: COL.a, backgroundColor: "transparent", fill: false, tension: .3, pointRadius: 4, pointBackgroundColor: COL.a, borderWidth: 2 },
-        { label: "Gifted & Talented", data: D.trend.map(function (x) { return x.gifted; }), borderColor: COL.b, backgroundColor: "transparent", fill: false, tension: .3, pointRadius: 4, pointBackgroundColor: COL.b, borderWidth: 2 }
-      ] } });
+    var trendCard = $("#trendCard");
+    if ((D.trend || []).length >= 2) {
+      if (trendCard) trendCard.hidden = false;
+      var o3 = baseOpts(); o3.interaction = { mode: "index", intersect: false };
+      o3.scales.x.grid = { display: false };
+      var tsets = [{ label: man.length ? "Learners with special education needs" : "Learners with Disabilities", data: D.trend.map(function (x) { return x.lwd; }), borderColor: COL.a, backgroundColor: "transparent", fill: false, tension: .3, pointRadius: 4, pointBackgroundColor: COL.a, borderWidth: 2 }];
+      if (D.trend.some(function (x) { return has(x.gifted); })) tsets.push({ label: "Gifted & Talented", data: D.trend.map(function (x) { return has(x.gifted) ? +x.gifted : null; }), borderColor: COL.b, backgroundColor: "transparent", fill: false, tension: .3, pointRadius: 4, pointBackgroundColor: COL.b, borderWidth: 2 });
+      charts.trend = new Chart($("#chTrend"), { type: "line", options: o3, data: { labels: D.trend.map(function (x) { return x.sy; }), datasets: tsets } });
+    } else if (trendCard) trendCard.hidden = true;
 
-    var o4 = baseOpts(); o4.scales.x.grid = { display: false };
+    var dsorted = DIST.slice().sort(function (a, b) { return b.lwd - a.lwd; });
+    var o4 = baseOpts(); o4.indexAxis = "y";
+    o4.scales.x.stacked = true; o4.scales.y.stacked = true; o4.scales.y.grid = { display: false };
+    o4.scales.y.ticks.autoSkip = false; o4.scales.y.ticks.font = { size: 11 };
+    var dbox = $("#chDistrict").parentNode; dbox.style.height = Math.max(300, dsorted.length * 20 + 70) + "px";
     charts.dist = new Chart($("#chDistrict"), { type: "bar", options: o4, data: {
-      labels: D.byDistrict.map(function (x) { return x.district; }),
-      datasets: [
-        { label: "Learners with Disabilities", data: D.byDistrict.map(function (x) { return x.lwd; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .7, categoryPercentage: .6 },
-        { label: "Gifted & Talented", data: D.byDistrict.map(function (x) { return x.gifted; }), backgroundColor: COL.b, borderRadius: 2, barPercentage: .7, categoryPercentage: .6 }
-      ] } });
+      labels: dsorted.map(function (x) { return x.district; }),
+      datasets: distSplit
+        ? [{ label: "With diagnosis", data: dsorted.map(function (x) { return x.diagnosis; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .7 },
+           { label: "With manifestations", data: dsorted.map(function (x) { return x.manifestations; }), backgroundColor: COL.b, borderRadius: 2, barPercentage: .7 }]
+        : [{ label: "Learners", data: dsorted.map(function (x) { return x.lwd; }), backgroundColor: COL.a, borderRadius: 2, barPercentage: .7 }]
+    } });
   }
   $$(".seg button").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -174,24 +202,37 @@
   });
 
   /* ---------- directory ---------- */
-  var districts = Array.from(new Set(D.schools.map(function (s) { return s.district; }))).sort();
-  var types = Array.from(new Set(D.schools.map(function (s) { return s.type; }))).sort();
-  districts.forEach(function (d) { $("#fDistrict").insertAdjacentHTML("beforeend", "<option>" + esc(d) + "</option>"); });
+  var NODIST = "__none";
+  var districts = Array.from(new Set(D.schools.map(function (s) { return s.district || NODIST; }))).sort();
+  var types = Array.from(new Set(D.schools.map(function (s) { return s.type; }).filter(Boolean))).sort();
+  districts.forEach(function (d) { $("#fDistrict").insertAdjacentHTML("beforeend", '<option value="' + esc(d) + '">' + (d === NODIST ? "No district listed" : esc(d)) + "</option>"); });
   types.forEach(function (t) { $("#fType").insertAdjacentHTML("beforeend", "<option>" + esc(t) + "</option>"); });
   function badgeClass(t) { return /center$/i.test(t) && !/resource/i.test(t) ? "center" : /resource/i.test(t) ? "lrc" : "inclusive"; }
-  function renderSchools() {
+  var PAGE = 24, shown = PAGE;
+  function schoolCard(s) {
+    var loc = [s.municipality ? s.municipality + ", Iloilo" : "", s.district ? s.district + (s.municipality ? "" : " District") : ""].filter(Boolean).join(" · ");
+    var tags = s.programs || [], extra = tags.length > 6 ? ' · +' + (tags.length - 6) + " more" : "";
+    var meta = '<div><b>' + fmt(s.lwd) + "</b>learners</div>";
+    if (has(s.male) && has(s.female)) meta += "<div><b>" + fmt(s.male) + "</b>male</div><div><b>" + fmt(s.female) + "</b>female</div>";
+    if (has(s.teachers)) meta += "<div><b>" + fmt(s.teachers) + "</b>SNEd teachers</div>";
+    return '<article class="school"><span class="badge ' + badgeClass(s.type) + '">' + esc(s.type) + "</span><h3>" + esc(s.name) + "</h3>" +
+      (loc ? '<div class="loc">' + svg("pin").replace("<svg", '<svg width="14" height="14"') + esc(loc) + "</div>" : "") +
+      '<div class="tags">' + tags.slice(0, 6).map(esc).join(" · ") + extra + '</div><div class="meta">' + meta + "</div></article>";
+  }
+  function renderSchools(reset) {
+    if (reset) shown = PAGE;
     var q = $("#q").value.trim().toLowerCase(), fd = $("#fDistrict").value, ft = $("#fType").value;
     var list = D.schools.filter(function (s) {
-      var hay = (s.name + " " + s.municipality + " " + s.district + " " + s.type + " " + s.programs.join(" ")).toLowerCase();
-      return (!q || hay.indexOf(q) > -1) && (!fd || s.district === fd) && (!ft || s.type === ft);
+      var hay = (s.name + " " + (s.municipality || "") + " " + (s.district || "") + " " + s.type + " " + (s.programs || []).join(" ")).toLowerCase();
+      return (!q || hay.indexOf(q) > -1) && (!fd || (s.district || NODIST) === fd) && (!ft || s.type === ft);
     });
-    $("#resultCount").textContent = "Showing " + list.length + " of " + D.schools.length + " schools";
-    $("#schoolGrid").innerHTML = list.length ? list.map(function (s) {
-      return '<article class="school"><span class="badge ' + badgeClass(s.type) + '">' + esc(s.type) + "</span><h3>" + esc(s.name) + '</h3><div class="loc">' + svg("pin").replace("<svg", '<svg width="14" height="14"') + esc(s.municipality) + ", Iloilo · " + esc(s.district) + '</div><div class="tags">' + s.programs.map(esc).join(" · ") + '</div><div class="meta"><div><b>' + fmt(s.lwd) + '</b>learners</div><div><b>' + fmt(s.teachers) + "</b>SNEd teachers</div></div></article>";
-    }).join("") : '<div class="empty">No schools match your search.</div>';
+    $("#resultCount").textContent = "Showing " + Math.min(shown, list.length) + " of " + list.length + (list.length === D.schools.length ? " schools" : " matching schools (" + D.schools.length + " in all)");
+    $("#schoolGrid").innerHTML = list.length ? list.slice(0, shown).map(schoolCard).join("") : '<div class="empty">No schools match your search.</div>';
+    var more = $("#moreSchools"); if (more) more.style.display = shown >= list.length ? "none" : "";
   }
-  ["#q", "#fDistrict", "#fType"].forEach(function (s) { $(s).addEventListener("input", renderSchools); });
-  renderSchools();
+  ["#q", "#fDistrict", "#fType"].forEach(function (s) { $(s).addEventListener("input", function () { renderSchools(true); }); });
+  var moreBtn = $("#moreSchools"); if (moreBtn) moreBtn.addEventListener("click", function () { shown += PAGE * 2; renderSchools(false); });
+  renderSchools(true);
 
   /* ---------- programs, announcements, resources ---------- */
   $("#programList").innerHTML = D.programs.map(function (p, i) { return '<div class="program reveal"><span class="no">' + (i < 9 ? "0" : "") + (i + 1) + "</span><h3>" + esc(p.title) + "</h3><p>" + esc(p.text) + "</p></div>"; }).join("");
@@ -205,9 +246,10 @@
   function toCSV(rows) { return rows.map(function (r) { return r.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(","); }).join("\r\n"); }
   function download(name, text) { var b = new Blob(["﻿" + text], { type: "text/csv" }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200); }
   var exporters = {
-    disability: function () { download("sned-learners-by-disability.csv", toCSV([["Category", "Male", "Female", "Total"]].concat(dis.map(function (x) { return [x.category, x.male, x.female, x.total]; })))); },
-    district: function () { download("sned-by-district.csv", toCSV([["District", "Learners with Disabilities", "Gifted & Talented", "SNEd Centers", "Inclusive Schools"]].concat(D.byDistrict.map(function (x) { return [x.district, x.lwd, x.gifted, x.centers, x.schools]; })))); },
-    schools: function () { download("sned-centers-directory.csv", toCSV([["School", "Municipality", "District", "Type", "Programs", "Learners", "SNEd Teachers"]].concat(D.schools.map(function (s) { return [s.name, s.municipality, s.district, s.type, s.programs.join("; "), s.lwd, s.teachers]; })))); }
+    disability: function () { download("sned-learners-with-diagnosis.csv", toCSV([["Disability category", "Male", "Female", "Total"]].concat(dis.map(function (x) { return [x.category, x.male, x.female, x.total]; })))); },
+    manifest: function () { download("sned-learners-with-manifestations.csv", toCSV([["Manifestation", "Male", "Female", "Total"]].concat(man.map(function (x) { return [x.category, x.male, x.female, x.total]; })))); },
+    district: function () { download("sned-by-school-district.csv", toCSV([["School district", "With diagnosis", "With manifestations", "Total learners", "Schools serving LSENs"]].concat(DIST.map(function (x) { return [x.district, x.diagnosis == null ? "" : x.diagnosis, x.manifestations == null ? "" : x.manifestations, x.lwd, x.schools]; })))); },
+    schools: function () { download("sned-schools-directory.csv", toCSV([["School", "School ID", "District", "Type", "Programs / categories", "Learners", "Male", "Female", "SNEd Teachers"]].concat(D.schools.map(function (s) { return [s.name, s.id || "", s.district || "", s.type, (s.programs || []).join("; "), s.lwd, has(s.male) ? s.male : "", has(s.female) ? s.female : "", has(s.teachers) ? s.teachers : ""]; })))); }
   };
   $$("[data-csv]").forEach(function (b) { b.addEventListener("click", function () { exporters[b.getAttribute("data-csv")](); }); });
 
