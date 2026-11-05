@@ -209,8 +209,8 @@
         blank: { name: "", municipality: "", district: "", type: "Elementary", programs: [], lwd: 0, male: null, female: null, teachers: null } },
       programs: { title: "Programs & Services", help: "Cards shown in the purple Programs section.",
         cols: [{ k: "icon", l: "Icon", t: "select", opts: ICONS }, { k: "title", l: "Title", w: "24%" }, { k: "text", l: "Description", t: "area", w: "50%" }], blank: { icon: "star", title: "", text: "" } },
-      announcements: { title: "Announcements", help: "Newest items appear first automatically.",
-        cols: [{ k: "date", l: "Date", t: "date" }, { k: "title", l: "Title", w: "30%" }, { k: "text", l: "Details", t: "area", w: "45%" }], blank: { date: new Date().toISOString().slice(0, 10), title: "", text: "" } },
+      announcements: { title: "Announcements", help: "Newest items appear first automatically. For an event that lasts more than one day, set the Start date and the End date; leave End date empty for a one-day item.",
+        cols: [{ k: "date", l: "Start date", t: "date" }, { k: "endDate", l: "End date (optional)", t: "date" }, { k: "title", l: "Title", w: "26%" }, { k: "text", l: "Details", t: "area", w: "38%" }], blank: { date: new Date().toISOString().slice(0, 10), endDate: "", title: "", text: "" } },
       resources: { title: "Policies & Resources", help: "For your own files: upload them to the files folder on GitHub, then type files/filename.pdf as the link.",
         cols: [{ k: "title", l: "Title", w: "50%" }, { k: "type", l: "Type (Policy, Form…)" }, { k: "url", l: "Link / file path", w: "26%" }], blank: { title: "", type: "Form", url: "files/" } }
     };
@@ -364,6 +364,8 @@
       if (D.schools.length) chk(sch === all, "Learners in the schools directory add up to the learner total (" + fmt(all) + ").", "Learners in the schools directory add up to " + fmt(sch) + "; the learner total is " + fmt(all) + ".");
       if (hasNum(S.schoolsWithLsen)) chk(schN === +S.schoolsWithLsen, "Headline “schools serving LSENs” matches the directory (" + fmt(schN) + ").", "Headline “schools serving LSENs” is " + fmt(S.schoolsWithLsen) + " but the directory has " + fmt(schN) + " schools with learners.");
       if (D.trend.length) chk(+last.lwd === all, "Latest trend year (" + esc(last.sy) + ") matches the learner total.", "Latest trend year (" + esc(last.sy) + ") shows " + fmt(last.lwd) + " learners; the learner total is " + fmt(all) + ".");
+      var badDates = D.announcements.filter(function (a) { return a.endDate && a.date && a.endDate < a.date; }).length;
+      chk(!badDates, "Announcement dates are in order.", badDates + " announcement(s) have an End date before the Start date.");
       var blankNames = D.schools.filter(function (s) { return !String(s.name).trim(); }).length;
       chk(!blankNames, "Every school in the directory has a name.", blankNames + " school row(s) have no name.");
       var sample = D.schools.filter(function (s) { return /sample/i.test(s.name); }).length;
