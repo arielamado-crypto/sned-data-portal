@@ -20,8 +20,16 @@ files/                  put downloadable PDFs / Excel here
 3. Go to **Settings → Pages** → Source: **Deploy from a branch** → Branch: `main`, folder `/ (root)` → Save.
 4. After about a minute the site is live at `https://YOUR-USERNAME.github.io/sned-iloilo/`.
 
+## Updating the data from the SPED Excel file
+1. Open your private SNEd Data Editor page and click **Import Excel**.
+2. Choose the SDO Iloilo SPED learners workbook (sheets NON-GRADED, GRADED K - G6, JHS GRADED, NON-GRADED JHS, SHS GRADED).
+3. Confirm the summary. The **Check & publish** tab lists any cells in the Excel file that need fixing.
+4. Click **Preview site**, then **Publish to GitHub**.
+
+The importer reads every cell (the sheets' own TOTAL columns are not used). It keeps General info, the supervisor message, programs, announcements, resources, SNEd Centers and SNEd Teachers as they are.
+
 ## Updating the data — Data Editor
-1. Open `admin.html` on your site (or the "Data editor" link at the very bottom of the site).
+1. Open your private SNEd Data Editor page (it is not linked from the site).
 2. Fill in the forms. You can copy cells from Excel and paste them into any table.
 3. Click **Preview site** to check.
 4. Click **Publish to GitHub**. The live site updates in about a minute.
@@ -38,7 +46,7 @@ If the token expires, create a new one and paste it again. **Forget token** remo
 
 No token? Click **Download data.js**, then on GitHub open `assets` → `js` → **Add file** → **Upload files** → drag in data.js → **Commit changes**.
 
-Without a token, nobody can change the live site from the editor, so it is safe for `admin.html` to be public.
+Without a token, nobody can change the live site from the editor, so visitors cannot change anything even if they find the editor page.
 
 ## Updating the data — manual way
 Open `assets/js/data.js` (on GitHub, click the file then the pencil icon), change the numbers, and commit.
