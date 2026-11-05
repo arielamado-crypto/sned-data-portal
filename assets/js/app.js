@@ -241,9 +241,19 @@
 
   /* ---------- programs, announcements, resources ---------- */
   $("#programList").innerHTML = D.programs.map(function (p, i) { return '<div class="program reveal"><span class="no">' + (i < 9 ? "0" : "") + (i + 1) + "</span><h3>" + esc(p.title) + "</h3><p>" + esc(p.text) + "</p></div>"; }).join("");
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function pday(v) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim()); return m ? { y: +m[1], m: +m[2] - 1, d: +m[3] } : null; }
+  function dateRange(a, b) {
+    var s = pday(a), e = pday(b);
+    if (!s) return esc(a || "");
+    var one = function (x, yr) { return MONTHS[x.m] + " " + x.d + (yr ? ", " + x.y : ""); };
+    if (!e || (e.y === s.y && e.m === s.m && e.d === s.d) || (e.y * 400 + e.m * 32 + e.d) < (s.y * 400 + s.m * 32 + s.d)) return one(s, true);
+    if (e.y === s.y && e.m === s.m) return MONTHS[s.m] + " " + s.d + "–" + e.d + ", " + s.y;
+    if (e.y === s.y) return one(s, false) + " – " + one(e, true);
+    return one(s, true) + " – " + one(e, true);
+  }
   $("#announceList").innerHTML = D.announcements.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; }).map(function (a) {
-    var d = new Date(a.date + "T00:00:00");
-    return '<li><time datetime="' + esc(a.date) + '">' + d.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }) + "</time><div><h3>" + esc(a.title) + "</h3><p>" + esc(a.text) + "</p></div></li>";
+    return '<li><time datetime="' + esc(a.date) + '">' + dateRange(a.date, a.endDate) + "</time><div><h3>" + esc(a.title) + "</h3><p>" + esc(a.text) + "</p></div></li>";
   }).join("");
   $("#resourceList").innerHTML = D.resources.map(function (r) { return '<li><a href="' + esc(r.url) + '"' + (/^https?:/.test(r.url) ? ' target="_blank" rel="noopener"' : "") + '><span class="ft">' + esc(r.type) + '</span><span class="t">' + esc(r.title) + '</span><span class="arr">→</span></a></li>'; }).join("");
 
