@@ -247,6 +247,15 @@
   }).join("");
   $("#resourceList").innerHTML = D.resources.map(function (r) { return '<li><a href="' + esc(r.url) + '"' + (/^https?:/.test(r.url) ? ' target="_blank" rel="noopener"' : "") + '><span class="ft">' + esc(r.type) + '</span><span class="t">' + esc(r.title) + '</span><span class="arr">→</span></a></li>'; }).join("");
 
+  /* ---------- Google Drive folder button ---------- */
+  var drive = String((D.meta && D.meta.driveLink) || "").trim();
+  if (/^https?:\/\//i.test(drive)) {
+    var dbox = $("#driveBox"), dbtn = $("#driveBtn"), dli = $("#driveLi");
+    if (dbtn) { dbtn.href = drive; if (D.meta.driveLabel) dbtn.textContent = D.meta.driveLabel + " ↗"; }
+    if (dbox) dbox.hidden = false;
+    if (dli) { dli.hidden = false; $("#driveFoot").href = drive; }
+  } else { var hb = $("#driveBox"); if (hb) hb.style.display = "none"; }
+
   /* ---------- CSV export ---------- */
   function toCSV(rows) { return rows.map(function (r) { return r.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(","); }).join("\r\n"); }
   function download(name, text) { var b = new Blob(["﻿" + text], { type: "text/csv" }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200); }

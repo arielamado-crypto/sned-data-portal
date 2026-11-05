@@ -20,6 +20,8 @@ window.SNED_DATA = {
     "supervisorName": "Abraham P. Imas",
     "supervisorPosition": "Education Program Supervisor, Special Needs Education",
     "supervisorMessage": "Every learner deserves to be seen, counted and served. This portal keeps our SNEd data open and up to date so that schools, parents and partners can work together for truly inclusive education in the Division of Iloilo.",
+    "driveLink": "https://drive.google.com/drive/folders/1sD_sWt_fL2CXwe3O12nC6hJ-1P7XWGsR",
+    "driveLabel": "Open Google Drive folder",
     "developer": "Ariel L. Amado, Master Teacher I"
   },
   "summary": {
